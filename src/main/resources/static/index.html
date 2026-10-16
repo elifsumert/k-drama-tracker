@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Drama Takip</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; }
+        h1 { text-align: center; color: #2c3e50; }
+        .form-konteyner { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto 30px auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .form-grup { display: flex; flex-direction: column; margin-bottom: 10px; }
+        input, select, button { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #2980b9; }
+        #dizi-konteyner { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+        .dizi-kart { background: white; width: 250px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); overflow: hidden; }
+        .dizi-afis { width: 100%; height: 350px; object-fit: cover; background-color: #ddd; }
+        .dizi-bilgi { padding: 15px; }
+        .dizi-baslik { font-size: 18px; font-weight: bold; margin: 0 0 10px; color: #e74c3c; }
+        .dizi-detay { font-size: 14px; margin: 5px 0; color: #555; }
+        .puan { display: inline-block; background: #f1c40f; color: #fff; padding: 3px 8px; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>🎬 Benim K-Drama Listem</h1>
+
+    <!-- Yeni Dizi Ekleme Formu -->
+    <div class="form-konteyner">
+        <form id="dizi-formu">
+            <div class="form-grup"><input type="text" id="diziAdi" placeholder="Dizi Adı (Örn: Her Private Life)" required></div>
+            <div class="form-grup"><input type="text" id="tur" placeholder="Tür (Örn: Romantik Komedi)" required></div>
+            <div class="form-grup"><input type="number" id="toplamBolum" placeholder="Toplam Bölüm Sayısı" required></div>
+            <div class="form-grup"><input type="number" id="izlenenBolum" placeholder="İzlenen Bölüm Sayısı" required></div>
+            <div class="form-grup">
+                <select id="durum">
+                    <option value="İzleniyor">İzleniyor</option>
+                    <option value="Tamamlandı">Tamamlandı</option>
+                    <option value="İzlenecek">İzlenecek</option>
+                </select>
+            </div>
+            <div class="form-grup"><input type="number" id="puan" placeholder="Puan (1-10)" min="1" max="10" required></div>
+            <div class="form-grup"><input type="text" id="afisUrl" placeholder="Afiş Görsel Linki (URL)" required></div>
+            <button type="submit">Diziyi Kaydet</button>
+        </form>
+    </div>
+
+    <div id="dizi-konteyner"></div>
+
+    <script>
+        // Sayfa yüklendiğinde dizileri getiren fonksiyon
+        function dizileriGetir() {
+            fetch('/diziler')
+                .then(response => response.json())
+                .then(diziler => {
+                    const konteyner = document.getElementById('dizi-konteyner');
+                    konteyner.innerHTML = ''; // Önceki listeyi temizle
+                    
+                    diziler.forEach(dizi => {
+                        const gecerliAfis = dizi.afisUrl ? dizi.afisUrl : "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg";
+                        const kartHTML = `
+                            <div class="dizi-kart">
+                                <img src="${gecerliAfis}" class="dizi-afis" alt="Afiş">
+                                <div class="dizi-bilgi">
+                                    <h2 class="dizi-baslik">${dizi.diziAdi}</h2>
+                                    <p class="dizi-detay"><strong>Tür:</strong> ${dizi.tur}</p>
+                                    <p class="dizi-detay"><strong>Bölüm:</strong> ${dizi.izlenenBolum} / ${dizi.toplamBolum}</p>
+                                    <p class="dizi-detay"><strong>Durum:</strong> ${dizi.durum}</p>
+                                    <span class="puan">⭐ ${dizi.puan}/10</span>
+                                </div>
+                            </div>
+                        `;
+                        konteyner.innerHTML += kartHTML;
+                    });
+                });
+        }
+
+        // Form gönderildiğinde çalışacak fonksiyon (POST)
+        document.getElementById('dizi-formu').addEventListener('submit', function(e) {
+            e.preventDefault(); // Sayfanın yenilenmesini engelle
+
+            // Formdaki verileri topla
+            const yeniDizi = {
+                diziAdi: document.getElementById('diziAdi').value,
+                tur: document.getElementById('tur').value,
+                toplamBolum: parseInt(document.getElementById('toplamBolum').value),
+                izlenenBolum: parseInt(document.getElementById('izlenenBolum').value),
+                durum: document.getElementById('durum').value,
+                puan: parseInt(document.getElementById('puan').value),
+                afisUrl: document.getElementById('afisUrl').value
+            };
+
+            // Java API'mize veriyi gönder
+            fetch('/diziler', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(yeniDizi)
+            }).then(() => {
+                document.getElementById('dizi-formu').reset(); // Formu temizle
+                dizileriGetir(); // Listeyi güncelle
+            });
+        });
+
+        // Sayfa ilk açıldığında listeyi yükle
+        dizileriGetir();
+    </script>
+</body>
+</html>
